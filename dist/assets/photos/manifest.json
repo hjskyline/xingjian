@@ -1,0 +1,112 @@
+{
+  "cbd-night": {
+    "file": "cbd-night.jpg",
+    "title": "国贸 CBD 夜景 · 2015年历史影像",
+    "author": "Morio",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Beijing_CBD_2015_September_(night).jpg",
+    "changes": "Resized to maximum 1800 pixels; website may visually crop via CSS.",
+    "date": "2 September 2015, Beijing, China"
+  },
+  "cbd": {
+    "file": "cbd.jpg",
+    "title": "国贸 CBD · 2023年11月实景",
+    "author": "Yli584",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "source": "https://commons.wikimedia.org/wiki/File:Beijing_Guomao_CBD.jpg",
+    "changes": "Resized to maximum 1800 pixels; website may visually crop via CSS.",
+    "date": "2023-11-08"
+  },
+  "ditan": {
+    "file": "ditan.jpg",
+    "title": "地坛西门牌楼 · 2024年9月实景",
+    "author": "N509FZ",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:West_gate_Paifang_of_the_Temple_of_Earth_(20240915133650).jpg",
+    "changes": "Resized to maximum 1800 pixels; website may visually crop via CSS.",
+    "date": "2024-09-15 13:36:50"
+  },
+  "yonghe": {
+    "file": "yonghe.jpg",
+    "title": "雍和宫 · 2020年1月实景",
+    "author": "Balon Greyjoy",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "source": "https://commons.wikimedia.org/wiki/File:20200109_Yonghe_Temple-7.jpg",
+    "changes": "Resized to maximum 1800 pixels; website may visually crop via CSS.",
+    "date": "9 January 2020, 12:43"
+  },
+  "hutong": {
+    "file": "hutong.jpg",
+    "title": "五道营胡同 · 2023年9月实景",
+    "author": "Andrzej Otrębski",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Beijing_hutong_Wudaoying_1.jpg",
+    "changes": "Resized to maximum 1800 pixels; website may visually crop via CSS.",
+    "date": "2023-09-20 17:11:38"
+  },
+  "olympic": {
+    "file": "olympic.jpg",
+    "title": "奥林匹克塔日落 · 2025年8月实景",
+    "author": "LunMa4",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Beijing_Olympic_Tower.jpg",
+    "changes": "Resized to maximum 1800 pixels; website may visually crop via CSS.",
+    "date": "2025-08-19 18:58:16"
+  },
+  "corner": {
+    "file": "corner.jpg",
+    "title": "故宫东北角楼夜景 · 2016年3月实景",
+    "author": "Morio",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:North-eastern_corner_tower_(Forbidden_City)_2016_March.jpg",
+    "changes": "Resized to maximum 1800 pixels; website may visually crop via CSS.",
+    "date": "27 March 2016, Beijing, China"
+  },
+  "jingshan": {
+    "file": "jingshan.jpg",
+    "title": "景山俯瞰故宫 · 2024年9月实景",
+    "author": "xiquinhosilva",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:%E6%99%AF%E5%B1%B1%E5%85%AC%E5%9B%AD%E4%BF%AF%E7%9E%B0%E6%95%85%E5%AE%AB_2024-09-16.jpg",
+    "changes": "Resized to maximum 1800 pixels; website may visually crop via CSS.",
+    "date": "2024-09-16 17:29:42"
+  },
+  "ginkgo": {
+    "file": "ginkgo.jpg",
+    "title": "奥森银杏林 · 2023年10月初实景",
+    "author": "星外之神",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Ginkgo_forest_in_Beijing_Olympic_Forest_Park_2.jpg",
+    "changes": "Resized; website may visually crop via CSS.",
+    "date": "2023-10-01 16:30:30"
+  },
+  "beihai": {
+    "file": "beihai.jpg",
+    "title": "北海公园湖畔 · 2013年5月实景",
+    "author": "Czzhermit",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Beihai_Park_in_Beijing_China.jpg",
+    "changes": "Resized; website may visually crop via CSS.",
+    "date": "2013-05-10 20:59:37"
+  },
+  "gong": {
+    "file": "gong.jpg",
+    "title": "恭王府 · 历史实景",
+    "author": "Bridget Coila from New Orleans, USA",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Prince_Gong%27s_Mansion_(2611721407).jpg",
+    "changes": "Resized; website may visually crop via CSS.",
+    "date": "2008-06-17 14:35"
+  }
+}

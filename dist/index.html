@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#f6f3eb" />
+    <meta
+      name="description"
+      content="用地图规划每一次旅程，用照片保留每一段记忆。支持多旅程、按天路线、预约清单与旅行相册。"
+    />
+    <title>行间 · 把旅程走成故事</title>
+    <link rel="icon" href="assets/leaf.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/vendor/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="brand" href="#"
+        ><span class="brand-mark">行</span
+        ><span>行间<span class="brand-en">JOURNEYS, TOGETHER</span></span></a
+      >
+      <nav aria-label="主导航">
+        <a href="#journeys">我的旅程</a><a href="#atlas">路线地图</a><a href="#scenes">沿途风景</a
+        ><a href="#reservations">出发准备</a><a href="#memories">旅行相册</a>
+      </nav>
+      <button class="button small share" id="shareTop">分享旅程 <span>↗</span></button>
+    </header>
+    <main>
+      <section class="hero" aria-labelledby="heroTitle">
+        <div class="hero-photo" id="heroPhoto"></div>
+        <div class="hero-shade"></div>
+        <div class="hero-inner">
+          <div class="eyebrow light">A LITTLE ATLAS OF OUR DAYS</div>
+          <h1 id="heroTitle">把想去的地方，<br />走成自己的故事。</h1>
+          <p>用地图计划下一站，用照片记住每一程。</p>
+          <div class="hero-actions">
+            <a class="button ivory" href="#atlas">展开我们的地图 <span>↘</span></a
+            ><span class="hero-small" id="heroTrip">当前旅程 · 京秋 · 三人行</span>
+          </div>
+        </div>
+        <div class="hero-caption">
+          <span class="tiny-dot"></span><span id="heroPlace">北京 · 国贸夜色</span>
+          <span id="heroCredit"></span>
+        </div>
+        <div class="hero-stamp">每一<br /><span>程</span></div>
+      </section>
+      <section id="journeys" class="journeys-section">
+        <div class="journeys-header">
+          <div>
+            <div class="eyebrow">YOUR JOURNEYS / 每一次出发</div>
+            <h2>世界很大，我们慢慢走。</h2>
+          </div>
+          <div class="journey-actions">
+            <button id="aiPlanner" class="button outline small">AI 路线助手 ↗</button
+            ><button id="importJourney" class="text-button">导入文件 ↑</button
+            ><button id="newJourney" class="button dark small">＋ 新建旅程</button>
+          </div>
+        </div>
+        <div id="journeyCards" class="journey-cards"></div>
+      </section>
+      <section class="trip-strip" id="tripStrip" aria-label="当前旅程概况"></section>
+      <section id="atlas" class="section atlas-section">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">01 / THE ROUTE</div>
+            <h2>让路线，回到地图上。</h2>
+          </div>
+          <div class="head-actions">
+            <button id="addStop" class="button dark small">＋ 添加地点</button
+            ><button id="editToggle" class="button outline small" aria-pressed="false">
+              调整行程</button
+            ><button id="overview" class="text-button">旅程总览 ↗</button>
+          </div>
+        </div>
+        <div class="atlas-toolbar">
+          <div class="map-mode-tabs">
+            <button id="planMode" class="active">规划路线</button
+            ><button id="memoryMode">照片足迹 <span id="mapPhotoCount">0</span></button>
+          </div>
+          <div class="atlas-tools">
+            <label><input id="showLabels" type="checkbox" checked />地点名称</label
+            ><button id="focusMap" class="text-button">展开地图 ⤢</button>
+          </div>
+        </div>
+        <div id="dayTabs" class="day-tabs" role="tablist" aria-label="选择旅行日期"></div>
+        <div class="atlas-layout">
+          <div class="map-column">
+            <div class="map-shell">
+              <div id="map" role="region" aria-label="旅程路线与照片地图"></div>
+              <div class="map-top">
+                <span class="map-chip" id="mapDay">DAY 01</span
+                ><button id="mapReset" class="map-control">⌖ 看完整路线</button>
+              </div>
+              <button id="tileToggle" class="map-bottom-control">切换示意底图</button>
+              <div class="map-compass" aria-label="北向">N<span>↑</span></div>
+              <div id="drawingToolbar" class="drawing-toolbar" hidden>
+                <span>点击地图添加转折点</span><button id="undoWaypoint">撤销点</button
+                ><button id="finishDrawing">保存路径</button
+                ><button id="cancelDrawing">取消</button>
+              </div>
+            </div>
+            <div class="map-legend">
+              <span><i class="legend-line"></i>按道路计算的路径</span
+              ><span><i class="legend-line dash"></i>未算路 / 公交示意</span
+              ><span>手绘 / 导入路径会单独标注；非实时导航</span>
+            </div>
+            <div class="route-notice">
+              <span>↗</span>
+              <p id="routeNotice">
+                地图点位为景点附近示意位置，不替代入口导航。底图加载慢时，可切换本地示意底图。
+              </p>
+            </div>
+          </div>
+          <aside class="day-panel" aria-label="当天行程">
+            <div id="daySummary"></div>
+            <div id="editHelp" class="edit-help" hidden>
+              调整时间、备注和顺序后会保存在此浏览器。用「分享旅程」把修改后的路线发给同行。
+            </div>
+            <ol id="timeline" class="timeline"></ol>
+            <div id="segmentList" class="segment-list"></div>
+            <div class="panel-footer"><span>改完顺序后，逐段检查交通与步行路径。</span></div>
+          </aside>
+        </div>
+      </section>
+      <section id="scenes" class="section scene-section">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">02 / PLACES TO REMEMBER</div>
+            <h2>先看看，我们将走进的风景。</h2>
+          </div>
+          <p class="section-aside">
+            参考实景照片 · 非实时叶色或灯光<br />点开卡片，查看地点与路线。
+          </p>
+        </div>
+        <div id="sceneGrid" class="scene-grid"></div>
+      </section>
+      <section id="reservations" class="section preparation-section">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">03 / BEFORE WE GO</div>
+            <h2>把准备做好，把时间留给旅途。</h2>
+          </div>
+          <div class="journey-actions">
+            <button id="addBooking" class="button outline small">＋ 添加提醒</button
+            ><button id="calendarAll" class="text-button">下载准备日历 ↓</button>
+          </div>
+        </div>
+        <div class="booking-intro">
+          <span class="status-dot"></span
+          ><span id="bookingIntroText">提醒日期是建议检查日，放票时间以官方为准。</span
+          ><strong id="bookingCount">0 / 5 已准备</strong>
+        </div>
+        <div id="bookingList" class="booking-list"></div>
+        <div class="preparation-note" id="bookingFootnote"></div>
+      </section>
+      <section id="memories" class="section memories-section">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">04 / OUR LITTLE ARCHIVE</div>
+            <h2>旅程结束，故事留在这里。</h2>
+          </div>
+          <div class="journey-actions">
+            <button id="openMemoryMap" class="text-button">在地图上看照片 ↗</button
+            ><button id="addPhoto" class="button dark small">＋ 添加旅行照片</button>
+          </div>
+        </div>
+        <div class="memory-toolbar">
+          <div class="memory-tabs" id="photoTabs"></div>
+          <span id="photoCount">等待第一张照片</span>
+        </div>
+        <div id="photoGrid" class="photo-grid"></div>
+        <div class="archive-note">
+          <div>
+            <strong>先收藏在自己的浏览器，再把记忆带走。</strong>
+            <p>
+              上传照片仅保存在当前设备。导出备份可交给同行导入；导出「公开相册数据」替换项目数据并重新部署后，大家都能看到。分享链接只携带路线修改，不包含本地照片。
+            </p>
+          </div>
+          <div class="archive-actions">
+            <button class="button outline small" id="backup">导出完整备份 ↓</button
+            ><button class="text-button" id="importButton">导入备份 ↑</button
+            ><button class="text-button" id="exportPublic">导出公开相册数据 ↗</button>
+          </div>
+        </div>
+      </section>
+      <section class="project-band">
+        <span class="project-monogram">行间</span>
+        <div>
+          <h3>每一次小旅程，都是人生地图上的一页。</h3>
+          <p>旅行可以很多次，记忆各有归处。开放源码，支持 GitHub Pages。</p>
+        </div>
+        <button id="exportRoute" class="button outline small">导出行程数据 ↓</button>
+      </section>
+    </main>
+    <footer>
+      <span>行间 <small>JOURNEYS, TOGETHER</small></span>
+      <div>
+        <button class="text-button" id="credits">照片署名与资料来源</button
+        ><a href="#atlas">回到地图 ↑</a>
+      </div>
+    </footer>
+    <dialog id="placeDialog" class="place-dialog">
+      <button class="dialog-close" data-close aria-label="关闭">×</button>
+      <div id="placeContent"></div>
+    </dialog>
+    <dialog id="photoDialog" class="photo-dialog">
+      <button class="dialog-close" data-close aria-label="关闭">×</button>
+      <div class="eyebrow">OUR LITTLE ARCHIVE</div>
+      <h2>留下这一刻。</h2>
+      <form id="photoForm">
+        <label class="upload-zone" for="photoInput"
+          ><span>＋</span><strong>选择一张旅行照片</strong
+          ><small>支持 JPG / PNG / WebP，自动压缩保存</small></label
+        ><input
+          id="photoInput"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          required
+          hidden
+        /><img id="photoPreview" alt="待添加照片预览" hidden /><label
+          >拍摄日期<input type="date" id="photoDate" value="2026-11-05" required /></label
+        ><label>留在哪个地方<select id="photoPlace" required></select></label
+        ><label
+          >给这一刻写一句话<input
+            id="photoCaption"
+            maxlength="160"
+            placeholder="比如：风一吹，整条胡同都金黄了。" /></label
+        ><button class="button dark" type="submit" id="photoSubmit">收藏到相册</button>
+        <p class="form-note">照片保存在此浏览器，记得导出备份。</p>
+      </form>
+    </dialog>
+    <dialog id="infoDialog" class="info-dialog">
+      <button class="dialog-close" data-close aria-label="关闭">×</button>
+      <div id="infoContent"></div>
+    </dialog>
+    <dialog id="journeyDialog" class="editor-dialog">
+      <button class="dialog-close" data-close aria-label="关闭">×</button>
+      <div class="eyebrow">A NEW CHAPTER</div>
+      <h2 id="journeyFormTitle">准备下一次出发。</h2>
+      <form id="journeyForm">
+        <label
+          >旅程名称<input
+            id="journeyTitle"
+            maxlength="70"
+            placeholder="比如：去杭州，过一个慢周末"
+            required /></label
+        ><label
+          >目的地城市<input
+            id="journeyCity"
+            maxlength="70"
+            placeholder="杭州 / 东京 / Paris…"
+            required
+        /></label>
+        <div class="form-pair">
+          <label>出发日期<input type="date" id="journeyStart" required /></label
+          ><label>结束日期<input type="date" id="journeyEnd" required /></label>
+        </div>
+        <div class="form-pair">
+          <label
+            >同行人数<input
+              type="number"
+              id="journeyTravelers"
+              min="1"
+              max="50"
+              value="2"
+              required /></label
+          ><label
+            >每天最多步行（km）<input
+              type="number"
+              id="journeyWalk"
+              min="1"
+              max="50"
+              value="20"
+              required
+          /></label>
+        </div>
+        <label
+          >住宿 / 每天的起点<input
+            id="journeyHome"
+            maxlength="100"
+            placeholder="可以稍后再定" /></label
+        ><label
+          >一句话期待<input
+            id="journeySubtitle"
+            maxlength="160"
+            placeholder="想看的风景，想吃的味道。" /></label
+        ><button class="button dark" id="journeySubmit" type="submit">创建旅程</button>
+        <p class="form-note">
+          按日期生成每天的空白路线，再在地图上添加地点。此版本保存在自己的浏览器，可导出、分享。
+        </p>
+      </form>
+    </dialog>
+    <dialog id="stopDialog" class="editor-dialog">
+      <button class="dialog-close" data-close aria-label="关闭">×</button>
+      <div class="eyebrow">PIN THE NEXT STOP</div>
+      <h2>把想去的地方，放进这一天。</h2>
+      <form id="stopForm">
+        <label
+          >地点名称<input
+            id="stopName"
+            maxlength="100"
+            placeholder="景点、餐馆、住宿都可以"
+            required
+        /></label>
+        <div class="search-row">
+          <button type="button" id="searchPlace" class="button outline small">搜索位置 ↗</button
+          ><button type="button" id="pickMap" class="text-button">在地图上选点 ⌖</button>
+        </div>
+        <div id="placeSearchResults" class="search-results"></div>
+        <div class="form-pair">
+          <label
+            >纬度<input id="stopLat" type="number" min="-85" max="85" step="any" required /></label
+          ><label
+            >经度<input id="stopLng" type="number" min="-180" max="180" step="any" required
+          /></label>
+        </div>
+        <small class="form-note">搜索可自动填写位置；也可以在地图上选点。坐标使用 WGS84。</small>
+        <div class="form-pair">
+          <label>预计到达<input id="stopTime" type="time" value="10:00" required /></label
+          ><label>停留时间<input id="stopDuration" maxlength="60" value="约60分钟" /></label>
+        </div>
+        <label
+          >从上一站怎么去<select id="stopMode">
+            <option value="walk">步行</option>
+            <option value="bike">自行车</option>
+            <option value="metro">公共交通 / 地铁</option>
+            <option value="bus">公交</option>
+          </select></label
+        ><label
+          >期待 / 备注<textarea
+            id="stopDescription"
+            maxlength="1000"
+            rows="3"
+            placeholder="为什么想去这里？需要留意什么？"
+          ></textarea></label
+        ><label class="inline-check"
+          ><input type="checkbox" id="stopOptional" />作为可选地点，时间紧可略过</label
+        ><button class="button dark" id="stopSubmit" type="submit">加到当天路线</button>
+      </form>
+    </dialog>
+    <dialog id="bookingDialog" class="editor-dialog">
+      <button class="dialog-close" data-close aria-label="关闭">×</button>
+      <div class="eyebrow">BEFORE WE GO</div>
+      <h2>留一个准备提醒。</h2>
+      <form id="bookingForm">
+        <label
+          >提醒什么<input
+            id="bookingTitle"
+            maxlength="100"
+            placeholder="预约博物馆 / 订餐厅 / 看天气"
+            required /></label
+        ><label>检查日期<input type="date" id="bookingDate" required /></label
+        ><label>官方入口（可选）<input id="bookingUrl" type="url" placeholder="https://…" /></label
+        ><label
+          >需要记住什么<textarea id="bookingDetail" rows="3" maxlength="1000"></textarea></label
+        ><button class="button dark" type="submit">加入准备清单</button>
+      </form>
+    </dialog>
+
+    <dialog id="aiDialog" class="ai-dialog">
+      <button class="dialog-close" data-close aria-label="关闭">×</button>
+      <div class="eyebrow">PLAN → IMPORT → REFINE</div>
+      <h2>把 AI 的方案，变成地图上的旅程。</h2>
+      <p class="dialog-intro">
+        复制提示词给你常用的 AI，再把它生成的路线文本粘贴回来。首版不在网页内调用 AI，也不需要填写
+        API 密钥。
+      </p>
+      <div class="ai-steps">
+        <span>01 写要求</span><span>02 复制提示词给 AI</span><span>03 粘贴方案并预览</span>
+      </div>
+      <label
+        >这次想怎样规划 / 修改？<textarea
+          id="aiRequirements"
+          rows="3"
+          placeholder="例如：保留国贸夜景，周六少走2公里，胡同时间多一些。"
+        ></textarea></label
+      ><label class="inline-check"
+        ><input type="checkbox" id="aiIncludeCurrent" checked />把当前旅程一起交给
+        AI，继续细化</label
+      ><button class="button dark small" id="copyAiPrompt">复制完整提示词 ↗</button>
+      <details class="prompt-preview">
+        <summary>查看提示词与格式</summary>
+        <pre id="aiPromptPreview"></pre>
+      </details>
+      <div class="ai-import-pane">
+        <label
+          >粘贴 AI 生成的路线文本<textarea
+            id="aiImportText"
+            rows="8"
+            spellcheck="false"
+            placeholder="粘贴 JSON 文本即可，也支持带 ```json 代码块的回复。"
+          ></textarea>
+        </label>
+        <div class="ai-import-actions">
+          <button class="button outline small" id="previewAiImport">检查并预览路线</button
+          ><button class="text-button" id="loadAiExample">试用格式示例</button>
+        </div>
+        <div id="aiImportError" class="form-error" role="alert"></div>
+        <div id="aiImportPreview" hidden></div>
+        <div class="form-pair">
+          <label
+            >导入方式<select id="aiImportMode">
+              <option value="new">作为新旅程，保留原方案</option>
+              <option value="update">更新当前旅程，保留地点照片</option>
+            </select></label
+          >
+          <div class="import-confirm">
+            <button id="confirmAiImport" class="button dark small" disabled>确认导入</button>
+          </div>
+        </div>
+        <p class="form-note">
+          AI
+          不知道真实道路时应省略路径，不要编造。位置待确认的地点会显示「待定位」，导入后可搜索、选点和逐段算路。
+        </p>
+      </div>
+    </dialog>
+    <dialog id="segmentDialog" class="editor-dialog">
+      <button class="dialog-close" data-close aria-label="关闭">×</button>
+      <div class="eyebrow">ONE LEG AT A TIME</div>
+      <h2 id="segmentTitle">细化这一段路。</h2>
+      <form id="segmentForm">
+        <label
+          >交通方式<select id="segmentMode">
+            <option value="walk">步行</option>
+            <option value="bike">自行车</option>
+            <option value="metro">地铁 / 公共交通</option>
+            <option value="bus">公交</option>
+            <option value="drive">驾车</option>
+          </select></label
+        ><label
+          >换乘 / 入口 / 沿途说明<textarea id="segmentNote" rows="3" maxlength="1000"></textarea>
+        </label>
+        <div class="form-pair">
+          <label
+            >预计分钟<input id="segmentMinutes" type="number" min="0" max="9999" step="1" /></label
+          ><label
+            >距离（km）<input id="segmentKm" type="number" min="0" max="99999" step="0.01"
+          /></label>
+        </div>
+        <button class="button dark" type="submit">保存这一段</button>
+      </form>
+      <div class="segment-path-actions">
+        <button id="calculatePath" class="button outline small">按道路计算路径 ↗</button
+        ><button id="drawPath" class="text-button">在地图上画路径</button
+        ><label class="text-button file-label"
+          >导入 GeoJSON<input
+            id="segmentGeometryInput"
+            type="file"
+            accept=".json,.geojson,application/json"
+            hidden
+        /></label>
+      </div>
+      <p id="pathStatus" class="scene-note"></p>
+      <p class="scene-note">
+        步行 / 骑行 / 驾车可尝试在线算路；公交、地铁需补充实际换乘与线路。算路会将本段端点坐标发送到
+        FOSSGIS 公共服务，失败时保留示意线。
+      </p>
+      <div id="turnList" class="turn-list"></div>
+    </dialog>
+    <dialog id="imageDialog" class="image-dialog">
+      <button class="dialog-close" data-close aria-label="关闭">×</button
+      ><img id="fullPhoto" alt="旅行照片" />
+      <p id="fullPhotoCaption"></p>
+    </dialog>
+    <input type="file" id="journeyImportInput" accept="application/json,.json" hidden /><input
+      type="file"
+      id="importInput"
+      accept="application/json,.json"
+      hidden
+    />
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="assets/vendor/leaflet.js"></script>
+    <script src="route-core.js"></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>

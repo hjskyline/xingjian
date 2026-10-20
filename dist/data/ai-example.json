@@ -1,0 +1,32 @@
+{
+  "format": "xingjian/1",
+  "coordinateSystem": "WGS84",
+  "title": "杭州慢游 · 导入格式示例",
+  "city": "杭州",
+  "startDate": "2027-04-02",
+  "endDate": "2027-04-03",
+  "travelers": 2,
+  "maxWalkKm": 15,
+  "base": "住宿待定",
+  "subtitle": "这是导入格式演示，地点位置、营业和交通需另行确认。",
+  "days": [
+    {
+      "date": "2027-04-02",
+      "title": "湖边慢走",
+      "walkKm": [3, 6],
+      "stops": [
+        {"id":"westlake","name":"西湖 · 示例位置","lat":30.244,"lng":120.14,"time":"09:00","duration":"自由漫步","description":"仅演示导入点位，非核实的景区入口。"},
+        {"id":"lakeside","name":"湖滨 · 示例位置","lat":30.254,"lng":120.157,"time":"12:00","duration":"午餐与休息","description":"导入后可重新搜索、定位实际餐馆。"}
+      ],
+      "legs": [{"from":"westlake","to":"lakeside","mode":"walk","note":"示例路段，尚未算路。可在编辑此段中计算或手绘。","minutes":30}]
+    },
+    {
+      "date": "2027-04-03",
+      "title": "留一点空白",
+      "walkKm": [0, 0],
+      "stops": [{"id":"museum","name":"想去的博物馆 · 待定位","lat":null,"lng":null,"time":"10:00","duration":"约2小时","description":"不知道准确位置时不用编坐标，导入后再搜索或在地图上选点。"}],
+      "legs": []
+    }
+  ],
+  "reminders": [{"title":"确认博物馆与预约","date":"2027-03-28","detail":"示例检查日，非官方放票日。","url":""}]
+}

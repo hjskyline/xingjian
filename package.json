@@ -1,0 +1,24 @@
+{
+  "name": "xingjian-travel-journal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "行间：可编辑路线地图、AI方案导入与按地点归档的旅行相册",
+  "license": "MIT",
+  "scripts": {
+    "start": "python3 -m http.server 4174 --directory dist",
+    "test": "node --check dist/app.js && node scripts/test_core.cjs",
+    "check": "node --check dist/app.js && python3 scripts/check_project.py",
+    "test:browser": "node scripts/browser_smoke.mjs"
+  },
+  "keywords": [
+    "travel",
+    "trip-planner",
+    "map",
+    "travel-journal",
+    "geojson",
+    "ai-itinerary"
+  ],
+  "devDependencies": {
+    "playwright": "1.55.0"
+  }
+}

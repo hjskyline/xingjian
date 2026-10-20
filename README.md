@@ -86,9 +86,9 @@ AI 更新按地点 id 或名称匹配已有照片，保留有照片的旧地点�
 1. 建立 GitHub 仓库，把本项目文件放到仓库根目录，包括 `.github`。
 2. 默认分支设为 `main`。
 3. 在仓库 Settings → Pages → Source 选择 **GitHub Actions**。
-4. 推送后等待 Pages 工作流完成，分享其网址。
+4. 在 Actions 中手动运行 Pages 工作流，完成后分享其网址。
 
-所有网页资源使用相对路径，支持 `https://用户名.github.io/仓库名/`。`.openai/hosting.json` 是当前 Sites 托管标识，GitHub Pages 不依赖它；复制为你自己的项目时可删掉 `.openai`。
+所有网页资源使用相对路径，支持 `https://用户名.github.io/仓库名/`。公开仓库不包含原始 Sites 托管配置；GitHub Pages 不需要它。
 
 ## 项目结构与检查
 

@@ -1,0 +1,15 @@
+name: Check route format
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  route-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check dist/app.js
+      - run: node scripts/test_core.cjs
+      - run: python3 scripts/check_project.py
