@@ -49,7 +49,26 @@
     problem = '',
     loading;
   const config = () => root.XJ_MAP_CONFIG || { provider: 'osm' };
-  function initialize() {
+  async function initialize() {
+    if (config().remoteConfig && !loading) {
+      try {
+        const endpoint = new URL(config().remoteConfig, root.location.href);
+        if (endpoint.origin !== root.location.origin) throw Error('配置必须来自本站。');
+        const response = await fetch(endpoint, { signal: AbortSignal.timeout(8000) });
+        if (!response.ok) throw Error('地图服务尚未配置。');
+        const remote = await response.json();
+        if (remote.provider !== 'amap' || typeof remote.amapKey !== 'string')
+          throw Error('地图配置无效。');
+        root.XJ_MAP_CONFIG = {
+          provider: 'amap',
+          amapKey: remote.amapKey,
+          serviceHost: '/_AMapService',
+        };
+      } catch {
+        problem = '地图服务配置暂不可用，请联系站点维护者。';
+        return false;
+      }
+    }
     if (config().provider !== 'amap') return Promise.resolve(false);
     if (loading) return loading;
     loading = new Promise((resolve) => {
@@ -80,11 +99,13 @@
         script.remove();
         finish(false);
       }, 15000);
-      script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(config().amapKey);
-      script.onload = () => {
+      root.__xingjianAMapReady = () => {
         if (!root.AMap) problem = '高德地图未能启动。';
         finish(!!root.AMap);
       };
+      script.src =
+        'https://webapi.amap.com/maps?v=2.0&callback=__xingjianAMapReady&key=' +
+        encodeURIComponent(config().amapKey);
       script.onerror = () => {
         problem = '高德地图连接失败，可先查看示意路线。';
         finish(false);

@@ -37,7 +37,7 @@ class Polyline extends Base {constructor(o){super();this.points=o.path;this.l=L.
 class Walking{search(a,b,cb){cb('complete',{routes:[{distance:1050,time:780,steps:[{road:'光华路',instruction:'沿光华路向北步行',distance:1050,path:[a,b].map(p=>({lng:p[0],lat:p[1]}))}]}]});}}
 class PlaceSearch{search(q,cb){cb('complete',{poiList:{pois:[{name:'测试地点',location:{lng:116.403243,lat:39.909403}}]}});}}
 class InfoWindow{setContent(){}open(){}close(){}}
-window.AMap={Map,Marker,Polyline,Walking,Riding:Walking,Driving:Walking,PlaceSearch,InfoWindow,ToolBar:class{},Scale:class{},Pixel:class{constructor(x,y){this.x=x;this.y=y;}},Bounds:class{constructor(a,b){this.a=a;this.b=b;}},plugin:(n,cb)=>cb()};
+window.AMap={Map,Marker,Polyline,Walking,Riding:Walking,Driving:Walking,PlaceSearch,InfoWindow,ToolBar:class{},Scale:class{},Pixel:class{constructor(x,y){this.x=x;this.y=y;}},Bounds:class{constructor(a,b){this.a=a;this.b=b;}},plugin:(n,cb)=>cb()};window.__xingjianAMapReady();
 })();`,
   }),
 );

@@ -65,7 +65,10 @@ async function test() {
     location: { href: 'https://example.cn/', origin: 'https://example.cn' },
     XJ_MAP_CONFIG: { provider: 'amap', amapKey: 'test', serviceHost: '/_AMapService' },
     AMap: { plugin: (n, cb) => cb(), Walking, PlaceSearch },
-    document: { createElement: () => ({ remove() {} }), head: { append: (s) => s.onload() } },
+    document: {
+      createElement: () => ({ remove() {} }),
+      head: { append: (s) => sandbox.__xingjianAMapReady() },
+    },
   };
   vm.runInNewContext(source, sandbox);
   assert.equal(await sandbox.XJMaps.initialize(), true);

@@ -13,5 +13,6 @@ jobs:
       - run: node --check dist/app.js
       - run: node scripts/test_core.cjs
       - run: node scripts/test_map_provider.cjs
+      - run: node scripts/test_edgeone.mjs
       - run: node --check dist/map-provider.js
       - run: python3 scripts/check_project.py
