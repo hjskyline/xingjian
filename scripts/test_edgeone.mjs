@@ -4,10 +4,11 @@ const load = async p => import('data:text/javascript;base64,'+Buffer.from(await 
 const config = await load('../edge-functions/api/map-config.js');
 const proxy = await load('../edge-functions/_AMapService/[[path]].js');
 const env = {AMAP_JS_KEY:'test-browser-key',AMAP_SECURITY_CODE:'test-security-code'};
-const publicConfig = await config.onRequestGet({env}).json();
+assert.equal(config.onRequest({request:new Request('https://example.cn/api/map-config',{method:'POST'}),env}).status,405);
+const publicConfig = await config.onRequest({request:new Request("https://example.cn/api/map-config"),env}).json();
 assert.equal(publicConfig.amapKey,env.AMAP_JS_KEY);
 assert.ok(!JSON.stringify(publicConfig).includes(env.AMAP_SECURITY_CODE));
-assert.equal(config.onRequestGet({env:{}}).status,503);
+assert.equal(config.onRequest({request:new Request("https://example.cn/api/map-config"),env:{}}).status,503);
 const request = (path,options={})=>new Request('https://example.cn/_AMapService'+path,options);
 assert.equal((await proxy.onRequest({request:request('/v3/place/text',{method:'POST'}),env})).status,405);
 assert.equal((await proxy.onRequest({request:request('/unknown'),env})).status,404);

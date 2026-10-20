@@ -51,22 +51,52 @@
   const config = () => root.XJ_MAP_CONFIG || { provider: 'osm' };
   async function initialize() {
     if (config().remoteConfig && !loading) {
+      let detail = '配置接口连接失败';
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
       try {
         const endpoint = new URL(config().remoteConfig, root.location.href);
-        if (endpoint.origin !== root.location.origin) throw Error('配置必须来自本站。');
-        const response = await fetch(endpoint, { signal: AbortSignal.timeout(8000) });
-        if (!response.ok) throw Error('地图服务尚未配置。');
+        if (endpoint.origin !== root.location.origin) {
+          detail = '配置地址必须来自本站';
+          throw Error('invalid config origin');
+        }
+        const options = {
+          signal: controller.signal,
+          credentials: 'same-origin',
+          cache: 'no-store',
+        };
+        let response = await fetch(endpoint, options);
+        // A preview token only goes to this same-origin configuration endpoint.
+        const page = new URL(root.location.href);
+        if (
+          [401, 403].includes(response.status) &&
+          page.searchParams.has('eo_token') &&
+          page.searchParams.has('eo_time')
+        ) {
+          endpoint.searchParams.set('eo_token', page.searchParams.get('eo_token'));
+          endpoint.searchParams.set('eo_time', page.searchParams.get('eo_time'));
+          response = await fetch(endpoint, options);
+        }
+        if (!response.ok) {
+          detail = `配置接口返回 HTTP ${response.status}`;
+          throw Error('config request failed');
+        }
+        detail = '配置接口未返回有效 JSON';
         const remote = await response.json();
-        if (remote.provider !== 'amap' || typeof remote.amapKey !== 'string')
-          throw Error('地图配置无效。');
+        if (remote.provider !== 'amap' || typeof remote.amapKey !== 'string' || !remote.amapKey) {
+          detail = '配置接口缺少地图应用标识';
+          throw Error('invalid config body');
+        }
         root.XJ_MAP_CONFIG = {
           provider: 'amap',
           amapKey: remote.amapKey,
           serviceHost: '/_AMapService',
         };
       } catch {
-        problem = '地图服务配置暂不可用，请联系站点维护者。';
+        problem = `地图服务配置暂不可用（${controller.signal.aborted ? '配置接口连接超时' : detail}）。`;
         return false;
+      } finally {
+        clearTimeout(timeout);
       }
     }
     if (config().provider !== 'amap') return Promise.resolve(false);

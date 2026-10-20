@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "start": "python3 -m http.server 4174 --directory dist",
-    "test": "node --check dist/app.js && node scripts/test_core.cjs && node scripts/test_map_provider.cjs && node scripts/test_edgeone.mjs",
+    "test": "node --check dist/app.js && node scripts/test_core.cjs && node scripts/test_map_provider.cjs && node scripts/test_edgeone.mjs && node scripts/test_remote_config.cjs",
     "check": "node --check dist/app.js && python3 scripts/check_project.py",
     "test:browser": "node scripts/browser_smoke.mjs"
   },
