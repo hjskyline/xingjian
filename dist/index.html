@@ -99,6 +99,7 @@
                 ><button id="cancelDrawing">取消</button>
               </div>
             </div>
+            <p id="mapServiceStatus" class="scene-note" role="status"></p>
             <div class="map-legend">
               <span><i class="legend-line"></i>按道路计算的路径</span
               ><span><i class="legend-line dash"></i>未算路 / 公交示意</span
@@ -471,6 +472,8 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="assets/vendor/leaflet.js"></script>
     <script src="route-core.js"></script>
+    <script src="map-config.js"></script>
+    <script src="map-provider.js"></script>
     <script src="app.js" defer></script>
   </body>
 </html>

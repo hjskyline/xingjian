@@ -66,7 +66,9 @@ See the [format specification](docs/route-format.md) (Chinese) and the [importab
 | Dashed schematic connection | Connects stops without road geometry; not an actual navigation route |
 | Pending location | No reliable coordinates; the app does not invent a position or use the map origin |
 
-Street tiles come from OpenStreetMap. The Beijing example includes a local schematic fallback. Other destinations retain coordinates, markers, and orientation on a grid when street tiles are unavailable.
+The default development configuration uses OpenStreetMap. An official AMap JS API adapter is available for a mainland deployment, including place search and road routing. See the [hosting preparation guide](docs/mainland-hosting.md) (Chinese). Mainland hosting has not yet been provisioned or verified.
+
+In the default configuration, street tiles come from OpenStreetMap. The Beijing example includes a local schematic fallback. Other destinations retain coordinates, markers, and orientation on a grid when street tiles are unavailable.
 
 Coordinates use **WGS84**. Do not mix in GCJ-02 coordinates from Amap or BD-09 coordinates from Baidu without conversion. GeoJSON coordinates are `[longitude, latitude]`.
 

@@ -1,0 +1,34 @@
+limit_req_zone $binary_remote_addr zone=amap:10m rate=3r/s;
+server {
+    listen 80;
+    server_name _;
+    location / { return 308 https://$host$request_uri; }
+}
+server {
+    listen 443 ssl;
+    server_name _;
+    ssl_certificate /etc/nginx/certs/server.crt;
+    ssl_certificate_key /etc/nginx/certs/server.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    root /usr/share/nginx/html;
+    index index.html;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    location = /healthz { access_log off; return 200 'ok'; }
+    location = /map-config.js { add_header Cache-Control 'no-store'; }
+    location / { try_files $uri $uri/ =404; }
+    # Official JS API security proxy: the security code never enters static files.
+    location /_AMapService/ {
+        limit_req zone=amap burst=8 nodelay;
+        limit_except GET { deny all; }
+        access_log off;
+        error_log /dev/null crit;
+        proxy_connect_timeout 8s;
+        proxy_read_timeout 20s;
+        proxy_ssl_server_name on;
+        proxy_ssl_name restapi.amap.com;
+        proxy_set_header Host restapi.amap.com;
+        set $args "$args&jscode=${AMAP_SECURITY_CODE}";
+        proxy_pass https://restapi.amap.com/;
+    }
+}

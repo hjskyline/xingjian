@@ -1,0 +1,19 @@
+services:
+  xingjian:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      AMAP_JS_KEY: ${AMAP_JS_KEY:?Set AMAP_JS_KEY in .env}
+      AMAP_SECURITY_CODE: ${AMAP_SECURITY_CODE:?Set AMAP_SECURITY_CODE in .env}
+    volumes:
+      - ./deploy/certs:/etc/nginx/certs:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"

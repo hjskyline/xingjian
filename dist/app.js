@@ -14,6 +14,7 @@ const safeUrl = (u) => {
     return '#';
   }
 };
+let MapUI = window.L;
 let KEY = 'xingjian-route-beijing-autumn-2026';
 const LIBRARY_KEY = 'xingjian-journeys-v1';
 let library = [],
@@ -282,6 +283,26 @@ function setupMap() {
     renderMap();
     return;
   }
+  const domestic = XJMaps.config().provider === 'amap';
+  if (domestic) {
+    $('#tileToggle').hidden = true;
+    if (!XJMaps.ready) {
+      MapUI = window.L;
+      streetOn = false;
+      map = null;
+      $('#mapServiceStatus').textContent = XJMaps.problem + ' 当前显示本地示意图。';
+      renderMap();
+      return;
+    }
+    MapUI = XJMaps.library();
+    map = MapUI.map('map', { scrollWheelZoom: false }).setView(trip.center || [30, 110], 10);
+    mapGroup = MapUI.featureGroup().addTo(map);
+    $('#mapServiceStatus').textContent = '高德地图 · 地点搜索和道路算路使用高德服务';
+    bindMapClick();
+    return;
+  }
+  MapUI = window.L;
+  $('#mapServiceStatus').textContent = '国际地图 · OpenStreetMap';
   streetOn = true;
   $('#tileToggle').hidden = false;
   $('#tileToggle').textContent = '切换示意底图';
@@ -325,7 +346,10 @@ function setupMap() {
     }
   });
   tileLayer.addTo(map);
-  mapGroup = L.featureGroup().addTo(map);
+  mapGroup = MapUI.featureGroup().addTo(map);
+  bindMapClick();
+}
+function bindMapClick() {
   map.on('click', (e) => {
     if (drawing) {
       addDrawingPoint(e.latlng);
@@ -379,8 +403,8 @@ function renderMap() {
     for (const [id, items] of grouped) {
       const p = places[id];
       bounds.push([p.lat, p.lng]);
-      const marker = L.marker([p.lat, p.lng], {
-        icon: L.divIcon({
+      const marker = MapUI.marker([p.lat, p.lng], {
+        icon: MapUI.divIcon({
           className: 'memory-marker-wrap',
           html: `<span class="memory-pin"><img src="${esc(items[0].src)}" alt="${esc(p.name)}"><b>${items.length}</b></span>`,
           iconSize: [47, 47],
@@ -419,7 +443,7 @@ function renderMap() {
           ? leg.geometry.coordinates.map((c) => [c[1], c[0]])
           : [[p.lat, p.lng], ...(leg?.via || []), [q.lat, q.lng]];
         const calculated = usable && leg.pathKind === 'calculated';
-        const line = L.polyline(path, {
+        const line = MapUI.polyline(path, {
           color: d.color,
           weight: usable ? 4 : 2.5,
           opacity: overviewMode ? 0.5 : 0.85,
@@ -439,7 +463,12 @@ function renderMap() {
             ],
           ]) {
             if (XJCore.distance([a[1], a[0]], [b[1], b[0]]) > 12) {
-              L.polyline([a, b], { color: d.color, weight: 1.5, opacity: 0.55, dashArray: '2 5' })
+              MapUI.polyline([a, b], {
+                color: d.color,
+                weight: 1.5,
+                opacity: 0.55,
+                dashArray: '2 5',
+              })
                 .bindTooltip('附近点位与道路匹配点的连接示意，入口需核对')
                 .addTo(mapGroup);
             }
@@ -461,8 +490,8 @@ function renderMap() {
         seen.add(p.id);
         bounds.push([p.lat, p.lng]);
         const count = all.filter((ph) => ph.place === p.id).length;
-        const marker = L.marker([p.lat, p.lng], {
-          icon: L.divIcon({
+        const marker = MapUI.marker([p.lat, p.lng], {
+          icon: MapUI.divIcon({
             className: 'map-marker-wrap',
             html: `<span class="map-number ${p.id === 'home' ? 'home' : ''}" style="--pin:${d.color}">${p.id === 'home' ? '⌂' : i + 1}${count ? '<b class="map-photo-badge">' + count + '</b>' : ''}</span>`,
             iconSize: [27, 27],
@@ -1061,6 +1090,7 @@ function validateTrip(input) {
           routeSteps: Array.isArray(leg.routeSteps)
             ? leg.routeSteps.slice(0, 300).map((st) => ({
                 name: text(st.name, 200),
+                instruction: text(st.instruction, 500),
                 type: text(st.type, 60),
                 modifier: text(st.modifier, 60),
                 distanceMeters: Number.isFinite(st.distanceMeters)
@@ -1283,6 +1313,7 @@ async function searchLocations(query) {
   const elapsed = Date.now() - lastSearchAt;
   if (elapsed < 1100) throw new Error('请稍等一秒再搜索。');
   lastSearchAt = Date.now();
+  if (XJMaps.config().provider === 'amap') return XJMaps.search(query, trip.city);
   const response = await fetch(
     'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=' +
       encodeURIComponent(query),
@@ -1654,6 +1685,7 @@ function openSegment(index) {
   $('#segmentDialog').showModal();
 }
 function turnText(step) {
+  if (step.instruction) return step.instruction;
   if (step.type === 'depart') return '从起点出发';
   if (step.type === 'arrive') return '抵达终点';
   const turn = {
@@ -1703,27 +1735,22 @@ async function calculateSegment() {
     coords = [from.lng, from.lat, to.lng, to.lat].join(',');
   lastRouteRequest = Date.now();
   $('#calculatePath').disabled = true;
-  $('#pathStatus').textContent = '正在向开源服务查询道路路径…';
+  $('#pathStatus').textContent =
+    XJMaps.config().provider === 'amap' ? '正在向高德查询道路路径…' : '正在向开源服务查询道路路径…';
   try {
-    const profile = { walk: 'foot', bike: 'bike', drive: 'car' }[leg.mode];
-    const endpoint = `https://routing.openstreetmap.de/routed-${profile}/route/v1/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true`;
-    const response = await fetch(endpoint, { signal: AbortSignal.timeout(18000) });
-    if (!response.ok) throw new Error('服务暂不可用');
-    const data = await response.json();
-    if (data.code !== 'Ok' || !data.routes?.length) throw new Error('没有找到可用路径');
-    if (owner !== trip.id || coords !== [from.lng, from.lat, to.lng, to.lat].join(','))
-      throw new Error('地点已变化，请重新查询');
-    const route = data.routes[0],
-      g = XJCore.geometry(route.geometry);
-    if (!XJCore.aligned(g, from, to)) throw new Error('道路匹配偏离地点较远，请先确认入口');
-    Object.assign(leg, {
-      geometry: g,
-      pathKind: 'calculated',
-      source: 'FOSSGIS OSRM / OpenStreetMap',
-      distanceMeters: Math.round(route.distance),
-      minutes: Math.round(route.duration / 60),
-      calculatedAt: new Date().toISOString(),
-      routeSteps: route.legs
+    let route;
+    if (XJMaps.config().provider === 'amap') {
+      route = await XJMaps.route(from, to, leg.mode);
+    } else {
+      const profile = { walk: 'foot', bike: 'bike', drive: 'car' }[leg.mode];
+      const endpoint = `https://routing.openstreetmap.de/routed-${profile}/route/v1/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true`;
+      const response = await fetch(endpoint, { signal: AbortSignal.timeout(18000) });
+      if (!response.ok) throw new Error('服务暂不可用');
+      const data = await response.json();
+      if (data.code !== 'Ok' || !data.routes?.length) throw new Error('没有找到可用路径');
+      route = data.routes[0];
+      route.source = 'FOSSGIS OSRM / OpenStreetMap';
+      route.routeSteps = route.legs
         .flatMap((l) => l.steps || [])
         .slice(0, 300)
         .map((st) => ({
@@ -1731,7 +1758,20 @@ async function calculateSegment() {
           distanceMeters: Math.round(st.distance || 0),
           type: st.maneuver?.type || '',
           modifier: st.maneuver?.modifier || '',
-        })),
+        }));
+    }
+    if (owner !== trip.id || coords !== [from.lng, from.lat, to.lng, to.lat].join(','))
+      throw new Error('地点已变化，请重新查询');
+    const g = XJCore.geometry(route.geometry);
+    if (!XJCore.aligned(g, from, to)) throw new Error('道路匹配偏离地点较远，请先确认入口');
+    Object.assign(leg, {
+      geometry: g,
+      pathKind: 'calculated',
+      source: route.source,
+      distanceMeters: Math.round(route.distance),
+      minutes: Math.round(route.duration / 60),
+      calculatedAt: new Date().toISOString(),
+      routeSteps: route.routeSteps,
     });
     storeLeg(day, leg);
     activeSegment.leg = leg;
@@ -1780,16 +1820,16 @@ function addDrawingPoint(ll) {
 function drawScratch() {
   if (!drawing || !map) return;
   if (drawingLayer) map.removeLayer(drawingLayer);
-  drawingLayer = L.featureGroup().addTo(map);
-  L.polyline([...drawing.points, [drawing.to.lat, drawing.to.lng]], {
+  drawingLayer = MapUI.featureGroup().addTo(map);
+  MapUI.polyline([...drawing.points, [drawing.to.lat, drawing.to.lng]], {
     color: '#9c7045',
     weight: 4,
     dashArray: '3 4',
   }).addTo(drawingLayer);
   drawing.points.forEach((p, i) => {
-    const marker = L.marker(p, {
+    const marker = MapUI.marker(p, {
       draggable: i > 0,
-      icon: L.divIcon({
+      icon: MapUI.divIcon({
         className: 'draw-waypoint',
         html: '<span class="map-number" style="--pin:#a27548">' + (i ? '·' : '起') + '</span>',
         iconSize: [25, 25],
@@ -2211,6 +2251,7 @@ async function init() {
   } catch {
     notify('当前浏览器无法保存照片，路线仍可使用。');
   }
+  await XJMaps.initialize();
   await activateJourney(preferred, shared);
   bindEvents();
   bindJourneyEvents();

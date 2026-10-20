@@ -2561,3 +2561,24 @@ dialog::backdrop {
 .ai-dialog label.inline-check {
   margin-top: 17px;
 }
+
+/* AMap keeps its own logo and approval-number attribution visible. */
+.xj-amap-label {
+  display: block;
+  background: #fffdf5;
+  border: 1px solid #ded7c5;
+  border-radius: 4px;
+  padding: 3px 6px;
+  color: #494c3e;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.amap-marker-label {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+#mapServiceStatus {
+  margin: 8px 0;
+  font-size: 12px;
+}

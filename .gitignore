@@ -4,3 +4,11 @@ work/
 *.log
 .openai/runtime/
 .openai/metrics/
+
+# Hosting credentials and TLS private keys
+.env
+.env.*
+!.env.example
+deploy/certs/
+*.pem
+*.key
