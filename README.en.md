@@ -92,16 +92,6 @@ Updating a journey from AI matches existing places by ID or name and retains old
 
 Do not commit private documents, ticket codes, credentials, or photos you do not want to publish to a public repository.
 
-## Deploy to GitHub Pages
-
-1. Fork or clone this repository.
-2. Use `main` as the deployment branch.
-3. In **Settings → Pages → Source**, select **GitHub Actions**.
-4. Manually run the Pages workflow from Actions.
-5. Share the URL returned by GitHub Pages after deployment completes.
-
-Assets use relative paths, so project URLs such as `https://username.github.io/repository/` work. The public repository omits the original Sites hosting configuration; GitHub Pages does not need it.
-
 ## Project structure
 
 ```text
