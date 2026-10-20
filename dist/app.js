@@ -46,7 +46,8 @@ let mapMode = 'plan',
   stagedImport = null,
   drawing = null,
   drawingLayer = null,
-  lastRouteRequest = 0;
+  lastRouteRequest = 0,
+  routeBatch = null;
 function notify(message) {
   $('#toast').textContent = message;
   $('#toast').classList.add('show');
@@ -165,7 +166,7 @@ function renderDay() {
     ? '在地图上点击一个位置；系统会带着坐标返回添加地点表单。'
     : editing
       ? '修改顺序会更新地图连线；交通说明和步行估计需要手动复核。'
-      : '实线为道路算路参考；虚线仅示意连接。园区入口、开放与现场通行请再确认。';
+      : '实线为已计算的道路 / 公交线路；虚线仅示意连接。园区入口、开放与现场通行请再确认。';
   $('#editHelp').hidden = !editing;
   $('#editToggle').setAttribute('aria-pressed', String(editing));
   $('#editToggle').textContent = editing ? '完成调整' : '调整行程';
@@ -1610,7 +1611,9 @@ function pathLabel(leg, from, to) {
   if (!XJCore.aligned(leg.geometry, from, to)) return '路径端点待核对';
   return (
     {
-      calculated: '沿道路计算 · OSM参考',
+      calculated: ['metro', 'bus'].includes(leg.mode)
+        ? '沿公交 / 地铁线路 · 已计算'
+        : '沿道路计算 · 已保存',
       manual: '手绘路径 · 参考',
       imported: '导入路径 · 待核验',
     }[leg.pathKind] || '导入路径 · 待核验'
@@ -1630,6 +1633,7 @@ function modeName(mode) {
 }
 function renderSegmentList() {
   if (!trip || !$('#segmentList')) return;
+  updateDayRoutingControls();
   const items = connectedSegments();
   $('#segmentList').innerHTML =
     mapMode === 'memories'
@@ -1717,6 +1721,117 @@ function currentSegmentLeg() {
     },
   };
 }
+function canCalculateMode(mode) {
+  return (
+    ['walk', 'bike', 'drive'].includes(mode) ||
+    (XJMaps.config().provider === 'amap' && ['metro', 'bus'].includes(mode))
+  );
+}
+async function requestDetailedRoute(from, to, mode, city) {
+  let route;
+  if (XJMaps.config().provider === 'amap') {
+    route = await XJMaps.route(from, to, mode, city);
+  } else {
+    const profile = { walk: 'foot', bike: 'bike', drive: 'car' }[mode];
+    const endpoint = `https://routing.openstreetmap.de/routed-${profile}/route/v1/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true`;
+    const response = await fetch(endpoint, { signal: AbortSignal.timeout(18000) });
+    if (!response.ok) throw new Error('服务暂不可用');
+    const data = await response.json();
+    if (data.code !== 'Ok' || !data.routes?.length) throw new Error('没有找到可用路径');
+    route = data.routes[0];
+    route.source = 'FOSSGIS OSRM / OpenStreetMap';
+    route.routeSteps = route.legs
+      .flatMap((l) => l.steps || [])
+      .slice(0, 300)
+      .map((st) => ({
+        name: st.name || '',
+        distanceMeters: Math.round(st.distance || 0),
+        type: st.maneuver?.type || '',
+        modifier: st.maneuver?.modifier || '',
+      }));
+  }
+  return route;
+}
+function applyDetailedRoute(leg, route, from, to) {
+  const g = XJCore.geometry(route.geometry);
+  if (!XJCore.aligned(g, from, to)) throw new Error('道路匹配偏离地点较远，请先确认入口');
+  Object.assign(leg, {
+    geometry: g,
+    pathKind: 'calculated',
+    source: route.source,
+    distanceMeters: Math.round(route.distance),
+    minutes: Math.round(route.duration / 60),
+    calculatedAt: new Date().toISOString(),
+    routeSteps: route.routeSteps,
+  });
+}
+function updateDayRoutingControls() {
+  const running = !!routeBatch;
+  $('#completeDayRoutes').disabled = running || mapMode === 'memories';
+  $('#cancelDayRoutes').hidden = !running;
+  $('#calculatePath').disabled = running;
+}
+async function completeDayRoutes() {
+  if (routeBatch || mapMode === 'memories') return;
+  const day = currentDay(),
+    owner = trip.id;
+  const order = JSON.stringify(dayStops(day));
+  const pending = connectedSegments(day).filter(
+    (s) => !s.leg.geometry || !XJCore.aligned(s.leg.geometry, s.from, s.to),
+  );
+  if (!pending.length) return notify('当天各段已有路径。需要更换方案时，可打开单段重新计算。');
+  const job = { cancelled: false };
+  routeBatch = job;
+  const failures = [];
+  let done = 0;
+  const valid = () =>
+    !job.cancelled &&
+    trip.id === owner &&
+    currentDay() === day &&
+    JSON.stringify(dayStops(day)) === order;
+  updateDayRoutingControls();
+  try {
+    for (let i = 0; i < pending.length && valid(); i++) {
+      const { from, to, leg } = pending[i];
+      const coordinates = [from.lng, from.lat, to.lng, to.lat].join(',');
+      const original = JSON.stringify(
+        day.legs.find((l) => l.fromId === from.id && l.toId === to.id),
+      );
+      $('#dayRouteProgress').textContent =
+        `正在计算 ${i + 1}/${pending.length}：${from.name} → ${to.name}`;
+      try {
+        if (!XJCore.located(from) || !XJCore.located(to)) throw Error('地点待定位');
+        if (!canCalculateMode(leg.mode)) throw Error('请先选择支持的交通方式');
+        const wait = Math.max(0, 1100 - (Date.now() - lastRouteRequest));
+        if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
+        if (!valid()) break;
+        lastRouteRequest = Date.now();
+        const route = await requestDetailedRoute(from, to, leg.mode, trip.city);
+        if (!valid()) break;
+        if (
+          coordinates !== [from.lng, from.lat, to.lng, to.lat].join(',') ||
+          original !==
+            JSON.stringify(day.legs.find((l) => l.fromId === from.id && l.toId === to.id))
+        )
+          throw Error('路段或地点已修改，请重新计算');
+        const updated = { ...leg };
+        applyDetailedRoute(updated, route, from, to);
+        storeLeg(day, updated);
+        done++;
+        renderDay();
+      } catch (err) {
+        failures.push(`${from.name} → ${to.name}：${err.message}`);
+      }
+    }
+  } finally {
+    const stopped = !valid();
+    routeBatch = null;
+    updateDayRoutingControls();
+    $('#dayRouteProgress').textContent =
+      `${stopped ? '已停止。' : '计算完成。'}已保存 ${done} 段。${failures.length ? '仍待处理：' + failures.join('；') : ''}可打开各段查看转向与换乘说明。`;
+    notify(`已保存 ${done} 段真实路径${failures.length ? '，部分路段仍需核对' : ''}。`);
+  }
+}
 async function calculateSegment() {
   let record;
   try {
@@ -1728,51 +1843,23 @@ async function calculateSegment() {
     { from, to } = activeSegment;
   if (!XJCore.located(from) || !XJCore.located(to))
     return notify('先为两个地点确认位置，再计算路径。');
-  if (!['walk', 'bike', 'drive'].includes(leg.mode))
-    return notify('公交和地铁请填写实际换乘，或导入路线 / 手绘线路。');
+  if (routeBatch) return notify('正在补全当天路线，请等待完成或停止计算。');
+  if (!canCalculateMode(leg.mode))
+    return notify('当前地图模式暂不支持此交通方式，请切换高德或导入线路。');
   if (Date.now() - lastRouteRequest < 1100) return notify('请稍等一秒再查询。');
   const owner = trip.id,
     coords = [from.lng, from.lat, to.lng, to.lat].join(',');
   lastRouteRequest = Date.now();
   $('#calculatePath').disabled = true;
   $('#pathStatus').textContent =
-    XJMaps.config().provider === 'amap' ? '正在向高德查询道路路径…' : '正在向开源服务查询道路路径…';
+    XJMaps.config().provider === 'amap'
+      ? '正在向高德查询道路 / 公交线路…'
+      : '正在向开源服务查询道路路径…';
   try {
-    let route;
-    if (XJMaps.config().provider === 'amap') {
-      route = await XJMaps.route(from, to, leg.mode);
-    } else {
-      const profile = { walk: 'foot', bike: 'bike', drive: 'car' }[leg.mode];
-      const endpoint = `https://routing.openstreetmap.de/routed-${profile}/route/v1/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true`;
-      const response = await fetch(endpoint, { signal: AbortSignal.timeout(18000) });
-      if (!response.ok) throw new Error('服务暂不可用');
-      const data = await response.json();
-      if (data.code !== 'Ok' || !data.routes?.length) throw new Error('没有找到可用路径');
-      route = data.routes[0];
-      route.source = 'FOSSGIS OSRM / OpenStreetMap';
-      route.routeSteps = route.legs
-        .flatMap((l) => l.steps || [])
-        .slice(0, 300)
-        .map((st) => ({
-          name: st.name || '',
-          distanceMeters: Math.round(st.distance || 0),
-          type: st.maneuver?.type || '',
-          modifier: st.maneuver?.modifier || '',
-        }));
-    }
+    const route = await requestDetailedRoute(from, to, leg.mode, trip.city);
     if (owner !== trip.id || coords !== [from.lng, from.lat, to.lng, to.lat].join(','))
       throw new Error('地点已变化，请重新查询');
-    const g = XJCore.geometry(route.geometry);
-    if (!XJCore.aligned(g, from, to)) throw new Error('道路匹配偏离地点较远，请先确认入口');
-    Object.assign(leg, {
-      geometry: g,
-      pathKind: 'calculated',
-      source: route.source,
-      distanceMeters: Math.round(route.distance),
-      minutes: Math.round(route.duration / 60),
-      calculatedAt: new Date().toISOString(),
-      routeSteps: route.routeSteps,
-    });
+    applyDetailedRoute(leg, route, from, to);
     storeLeg(day, leg);
     activeSegment.leg = leg;
     $('#segmentDialog').close();
@@ -1783,7 +1870,7 @@ async function calculateSegment() {
     $('#pathStatus').textContent =
       '未能取得道路路径：' +
       (err.name === 'TimeoutError' ? '连接超时' : err.message) +
-      '。可以手绘或导入 GeoJSON。';
+      '。可以调整地点或交通方式后重试，或导入 GeoJSON。';
     notify('算路暂不可用，保留明确标注的示意连线。');
   } finally {
     $('#calculatePath').disabled = false;
@@ -2136,6 +2223,10 @@ function bindMapFeatures() {
     } catch (err) {
       notify(err.message);
     }
+  };
+  $('#completeDayRoutes').onclick = completeDayRoutes;
+  $('#cancelDayRoutes').onclick = () => {
+    if (routeBatch) routeBatch.cancelled = true;
   };
   $('#calculatePath').onclick = calculateSegment;
   $('#drawPath').onclick = startDrawing;

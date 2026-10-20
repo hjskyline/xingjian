@@ -3,6 +3,7 @@ const allowedPaths = new Set([
   '/v3/place/text', '/v3/place/around', '/v3/assistant/inputtips',
   '/v3/direction/walking', '/v3/direction/driving', '/v4/direction/bicycling',
   '/v5/direction/walking', '/v5/direction/driving', '/v5/direction/bicycling',
+  '/v3/direction/transit/integrated', '/v5/direction/transit/integrated',
 ]);
 export async function onRequest({ request, env }) {
   const reply = (text, status) => new Response(text, { status, headers: { 'Cache-Control': 'no-store' } });

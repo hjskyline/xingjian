@@ -39,7 +39,7 @@
     }
     return out;
   }
-  const coords = (p) => [p.lng ?? p.getLng(), p.lat ?? p.getLat()];
+  const coords = (p) => (Array.isArray(p) ? p : [p.lng ?? p.getLng(), p.lat ?? p.getLat()]);
   const latlng = (p) => {
     const c = toWGS(coords(p));
     return { lat: c[1], lng: c[0] };
@@ -193,24 +193,56 @@
         };
       });
   }
-  async function route(from, to, mode) {
-    const name = { walk: 'Walking', bike: 'Riding', drive: 'Driving' }[mode];
+  async function route(from, to, mode, city) {
+    const transit = ['metro', 'bus'].includes(mode);
+    const name = transit ? 'Transfer' : { walk: 'Walking', bike: 'Riding', drive: 'Driving' }[mode];
     if (!name) throw Error('此交通方式请填写实际换乘说明。');
+    if (transit && !city) throw Error('请先在旅程设置中填写城市，再查询公共交通。');
     await plugin('AMap.' + name);
-    const r = await timedSearch(new root.AMap[name]({ extensions: 'all' }), [
+    const options = { extensions: 'all' };
+    if (transit) {
+      options.city = city;
+      options.policy =
+        mode === 'bus' ? root.AMap.TransferPolicy.NO_SUBWAY : root.AMap.TransferPolicy.LEAST_TIME;
+    }
+    const r = await timedSearch(new root.AMap[name](options), [
       toGCJ([from.lng, from.lat]),
       toGCJ([to.lng, to.lat]),
     ]);
-    const plan = r.routes?.[0];
+    const plan = transit ? r.plans?.[0] : r.routes?.[0];
     if (!plan) throw Error('没有找到可用路径。');
-    const steps = plan.steps || plan.rides || [],
+    const steps = transit ? plan.segments || [] : plan.steps || plan.rides || [],
       path = [];
-    for (const step of steps)
-      for (const p of step.path || []) {
+    const chunks =
+      transit && plan.path?.length
+        ? [plan.path]
+        : steps.map(
+            (step) =>
+              step.path ||
+              step.transit?.path ||
+              (step.transit?.steps || []).flatMap((s) => s.path || []),
+          );
+    for (const chunk of chunks) {
+      if (!chunk?.length) throw Error('服务未返回完整线路，请核对换乘或导入路径。');
+      const first = toWGS(coords(chunk[0])),
+        prev = path.at(-1);
+      // Never turn a missing transfer path into a solid cross-city chord.
+      if (
+        prev &&
+        Math.hypot(
+          (first[0] - prev[0]) * Math.cos((first[1] * Math.PI) / 180),
+          first[1] - prev[1],
+        ) *
+          111320 >
+          80
+      )
+        throw Error('换乘路径存在缺口，请核对线路或导入完整路径。');
+      for (const p of chunk) {
         const c = toWGS(coords(p)),
           prev = path.at(-1);
         if (!prev || prev[0] !== c[0] || prev[1] !== c[1]) path.push(c);
       }
+    }
     if (path.length < 2) throw Error('服务未返回完整道路路径。');
     return {
       geometry: { type: 'LineString', coordinates: path },
@@ -218,8 +250,14 @@
       duration: plan.time,
       source: '高德地图 JS API',
       routeSteps: steps.slice(0, 300).map((st) => ({
-        name: st.road || '',
-        instruction: st.instruction || '',
+        name: st.road || (st.transit?.lines || []).map((l) => l.name).join(' / '),
+        instruction:
+          st.instruction ||
+          (transit
+            ? [st.transit_mode, st.transit?.on_station?.name, st.transit?.off_station?.name]
+                .filter(Boolean)
+                .join(' → ')
+            : ''),
         distanceMeters: Number(st.distance) || 0,
       })),
     };

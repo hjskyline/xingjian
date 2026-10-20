@@ -49,6 +49,31 @@ async function test() {
       });
     }
   }
+  let transitOptions;
+  let incomplete = false;
+  class Transfer {
+    constructor(options) {
+      transitOptions = options;
+    }
+    search(a, b, cb) {
+      cb('complete', {
+        plans: [
+          {
+            distance: 5000,
+            time: 1800,
+            segments: [
+              {
+                transit_mode: 'SUBWAY',
+                instruction: '乘坐地铁，到测试站下车',
+                distance: 5000,
+                transit: { lines: [{ name: '地铁5号线' }], path: incomplete ? [] : points },
+              },
+            ],
+          },
+        ],
+      });
+    }
+  }
   class PlaceSearch {
     search(q, cb) {
       cb('complete', {
@@ -64,7 +89,13 @@ async function test() {
     URL,
     location: { href: 'https://example.cn/', origin: 'https://example.cn' },
     XJ_MAP_CONFIG: { provider: 'amap', amapKey: 'test', serviceHost: '/_AMapService' },
-    AMap: { plugin: (n, cb) => cb(), Walking, PlaceSearch },
+    AMap: {
+      plugin: (n, cb) => cb(),
+      Walking,
+      Transfer,
+      TransferPolicy: { LEAST_TIME: 0, NO_SUBWAY: 5 },
+      PlaceSearch,
+    },
     document: {
       createElement: () => ({ remove() {} }),
       head: { append: (s) => sandbox.__xingjianAMapReady() },
@@ -80,7 +111,17 @@ async function test() {
   assert.equal(route.distance, 1400);
   const places = await sandbox.XJMaps.search('测试', '北京');
   assert.ok(Math.abs(places[0].lat - from.lat) < 1e-7);
-  await assert.rejects(sandbox.XJMaps.route(from, to, 'metro'), /换乘/);
+  const metro = await sandbox.XJMaps.route(from, to, 'metro', '北京');
+  assert.equal(transitOptions.city, '北京');
+  assert.equal(transitOptions.policy, 0);
+  assert.equal(metro.routeSteps[0].name, '地铁5号线');
+  assert.match(metro.routeSteps[0].instruction, /下车/);
+  assert.ok(Math.abs(metro.geometry.coordinates.at(-1)[0] - to.lng) < 1e-7);
+  await sandbox.XJMaps.route(from, to, 'bus', '北京');
+  assert.equal(transitOptions.policy, 5);
+  await assert.rejects(sandbox.XJMaps.route(from, to, 'metro'), /城市/);
+  incomplete = true;
+  await assert.rejects(sandbox.XJMaps.route(from, to, 'metro', '北京'), /完整线路/);
   const missing = { setTimeout, clearTimeout, URL, XJ_MAP_CONFIG: { provider: 'amap' } };
   vm.runInNewContext(source, missing);
   assert.equal(await missing.XJMaps.initialize(), false);

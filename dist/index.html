@@ -83,6 +83,11 @@
           </div>
         </div>
         <div id="dayTabs" class="day-tabs" role="tablist" aria-label="选择旅行日期"></div>
+        <div class="day-route-actions">
+          <button id="completeDayRoutes" class="button outline small">补全当天真实路线 ↗</button>
+          <button id="cancelDayRoutes" class="text-button" hidden>停止计算</button>
+          <p id="dayRouteProgress" class="scene-note" role="status" aria-live="polite"></p>
+        </div>
         <div class="atlas-layout">
           <div class="map-column">
             <div class="map-shell">
@@ -101,8 +106,8 @@
             </div>
             <p id="mapServiceStatus" class="scene-note" role="status"></p>
             <div class="map-legend">
-              <span><i class="legend-line"></i>按道路计算的路径</span
-              ><span><i class="legend-line dash"></i>未算路 / 公交示意</span
+              <span><i class="legend-line"></i>按道路 / 线路计算</span
+              ><span><i class="legend-line dash"></i>未算路示意</span
               ><span>手绘 / 导入路径会单独标注；非实时导航</span>
             </div>
             <div class="route-notice">
@@ -441,7 +446,7 @@
         <button class="button dark" type="submit">保存这一段</button>
       </form>
       <div class="segment-path-actions">
-        <button id="calculatePath" class="button outline small">按道路计算路径 ↗</button
+        <button id="calculatePath" class="button outline small">计算道路 / 公交线路 ↗</button
         ><button id="drawPath" class="text-button">在地图上画路径</button
         ><label class="text-button file-label"
           >导入 GeoJSON<input
@@ -453,8 +458,7 @@
       </div>
       <p id="pathStatus" class="scene-note"></p>
       <p class="scene-note">
-        步行 / 骑行 / 驾车可尝试在线算路；公交、地铁需补充实际换乘与线路。算路会将本段端点坐标发送到
-        FOSSGIS 公共服务，失败时保留示意线。
+        高德支持步行、骑行、驾车与市内公共交通；公交模式避开地铁，公共交通模式按快捷方案查询，可能组合公交和地铁。开源地图模式支持道路算路。查询会将端点坐标发送到当前地图服务；结果是规划参考，班次、入口与实时通行请出发前确认。
       </p>
       <div id="turnList" class="turn-list"></div>
     </dialog>

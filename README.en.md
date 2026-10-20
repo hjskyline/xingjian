@@ -66,7 +66,7 @@ See the [format specification](docs/route-format.md) (Chinese) and the [importab
 | Dashed schematic connection | Connects stops without road geometry; not an actual navigation route |
 | Pending location | No reliable coordinates; the app does not invent a position or use the map origin |
 
-The default development configuration uses OpenStreetMap. An official AMap JS API adapter is available for a mainland deployment, including place search and road routing. See the [hosting preparation guide](docs/mainland-hosting.md) (Chinese). Mainland hosting has not yet been provisioned or verified.
+The default development configuration uses OpenStreetMap. An official AMap JS API adapter is available for a mainland deployment, including place search and road routing. See the [hosting preparation guide](docs/mainland-hosting.md) (Chinese). A Tencent Cloud EdgeOne Makers deployment is now available. Its default domain requires expiring preview links in mainland China; configure a custom domain for stable sharing.
 
 In the default configuration, street tiles come from OpenStreetMap. The Beijing example includes a local schematic fallback. Other destinations retain coordinates, markers, and orientation on a grid when street tiles are unavailable.
 
@@ -74,7 +74,7 @@ Coordinates use **WGS84**. Do not mix in GCJ-02 coordinates from Amap or BD-09 c
 
 User-triggered road routing uses FOSSGIS OSRM profiles for walking, cycling, and driving, at no more than one request per second. The endpoints are sent to that service. Failures and timeouts leave clearly marked schematic lines; the app does not fabricate road geometry. Road geometry has been retrieved in a real browser and saved for 15 walking/cycling legs in the Beijing example. Availability may vary by network.
 
-Public transport legs require transfer notes or imported route geometry; the app does not treat them as pedestrian routes. Park entrances, opening hours, construction, and temporary restrictions still need checking in a navigation app or with official sources.
+AMap mode calculates city transit geometry and transfer instructions; the default OSM mode requires transfer notes or imported transit geometry. The app never substitutes pedestrian routes for transit. Park entrances, opening hours, construction, and temporary restrictions still need checking in a navigation app or with official sources.
 
 ## Storage, photos, and sharing
 
@@ -143,3 +143,5 @@ Feedback and bug reports are welcome in [Issues](https://github.com/hjskyline/xi
 ## License and attribution
 
 Project code is released under the [MIT License](LICENSE). Third-party photos and Leaflet retain their original licenses; see [ATTRIBUTION.md](ATTRIBUTION.md) and the photo manifest. Reference photos were taken in different years and seasons and do not represent real-time conditions.
+
+AMap routing also supports city transit, including metro and bus transfer instructions. “Complete today’s routes” fills missing geometry sequentially, preserves existing paths, saves successful results, and reports failures. Bus mode avoids subways; public transit mode uses the fastest suggested combination. These are planning references, not live navigation.

@@ -27,6 +27,8 @@ try {
  const result=await proxy.onRequest({request:request('/v3/place/text?key=wrong&jscode=wrong&keywords=%E5%8C%97%E6%B5%B7'),env});
  assert.equal(calls,1);assert.equal(result.status,200);assert.equal(result.headers.get('Cache-Control'),'no-store');
  assert.ok(!(await result.text()).includes(env.AMAP_SECURITY_CODE));
+ const transit=await proxy.onRequest({request:request('/v3/direction/transit/integrated?keywords=%E5%8C%97%E6%B5%B7'),env});
+ assert.equal(transit.status,200);
  globalThis.fetch=async()=>{throw Error('network failure with sensitive upstream URL');};
  const failed=await proxy.onRequest({request:request('/v3/place/text'),env});
  assert.equal(failed.status,502);assert.equal(await failed.text(),'Map provider temporarily unavailable');

@@ -2582,3 +2582,12 @@ dialog::backdrop {
   margin: 8px 0;
   font-size: 12px;
 }
+
+.day-route-actions {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+.day-route-actions .scene-note {
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+}
